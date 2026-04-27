@@ -1,0 +1,62 @@
+{
+  "name": "cobie-bimdata-viewer-plugin",
+  "version": "0.1.0",
+  "description": "Plugin BIMData Viewer 100% JS pour extraction COBie côté navigateur (xlsx 8 feuilles, sans backend).",
+  "type": "module",
+  "main": "./dist/cobie-bimdata-viewer-plugin.umd.js",
+  "module": "./dist/cobie-bimdata-viewer-plugin.es.js",
+  "exports": {
+    ".": {
+      "import": "./dist/cobie-bimdata-viewer-plugin.es.js",
+      "require": "./dist/cobie-bimdata-viewer-plugin.umd.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "peerDependencies": {
+    "vue": "^3.0.0",
+    "@bimdata/viewer": "*"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "vue": "^3.4.0"
+  },
+  "bimdata": {
+    "viewer-plugin": true,
+    "addToWindows": ["3d", "viewer3d"],
+    "name": "cobie-export"
+  },
+  "keywords": [
+    "bimdata",
+    "bimdata-viewer",
+    "bimdata-viewer-plugin",
+    "cobie",
+    "ifc",
+    "bim",
+    "xlsx"
+  ],
+  "author": "Stanislas Limouzi <stanislas@bimdata.io>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Slimouzi/Plugin-CoBie.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Slimouzi/Plugin-CoBie/issues"
+  },
+  "homepage": "https://github.com/Slimouzi/Plugin-CoBie#readme"
+}

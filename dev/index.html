@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Plugin CoBie — harnais de développement</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
+      h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+      .sub { color: #6b7280; margin-top: 0; font-size: 0.9rem; }
+      .card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 1rem; margin-top: 1rem; background: #f9fafb; }
+      .card h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+      pre { background: #111827; color: #f3f4f6; padding: 0.6rem; border-radius: 4px; overflow-x: auto; font-size: 0.78rem; }
+      .ok { color: #047857; }
+    </style>
+  </head>
+  <body>
+    <h1>Plugin CoBie — harnais de développement</h1>
+    <p class="sub">
+      Mode <strong>mock</strong> : <code>fetch</code> est intercepté pour retourner
+      des fixtures BIMData synthétiques. Aucun token n'est nécessaire, aucune
+      requête réseau n'est émise.
+    </p>
+
+    <div class="card">
+      <h2>Bouton plugin (monté dans le contexte mock)</h2>
+      <div id="app"></div>
+      <p class="sub">
+        Cliquez sur « Export COBie » : le plugin va appeler <code>BIMDataClient</code>,
+        recevoir les fixtures, construire les 8 feuilles et déclencher le
+        téléchargement de <code>COBie_Mock_Building_*.xlsx</code>.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Fixtures servies</h2>
+      <pre id="fixtures-summary">…</pre>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

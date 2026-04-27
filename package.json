@@ -20,7 +20,10 @@
   ],
   "scripts": {
     "build": "vite build",
-    "dev": "vite",
+    "dev": "vite serve dev --config vite.config.js",
+    "validate:xlsx": "node scripts/validate-xlsx.mjs",
+    "validate:spatial": "node --expose-gc scripts/stress-spatial-index.mjs",
+    "validate": "npm run validate:xlsx && npm run validate:spatial",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

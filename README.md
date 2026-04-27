@@ -80,6 +80,61 @@ Toutes en `GET` sur `https://api.bimdata.io/cloud/{cloudId}/project/{projectId}/
 
 Le token OAuth2 est lu du viewer ; aucun secret n'est embarqué dans le bundle.
 
+## Validation locale
+
+Avant publication, trois moyens de valider l'intégration sans dépendre d'un
+backend :
+
+### 1. Harnais dev/ avec fetch mocké
+
+```bash
+npm install
+npm run dev
+# → http://localhost:5173 — bouton plugin monté avec un contexte viewer
+#    simulé. fetch est intercepté et sert des fixtures BIMData synthétiques
+#    (8 feuilles non vides, lat/long, address, pset_X, etc.).
+```
+
+Le clic sur « Export COBie » télécharge un xlsx réel généré par
+`buildXlsxBlob` à partir des fixtures (`dev/mock-fixtures.js`).
+
+### 2. Validation du flux xlsx
+
+```bash
+npm run validate:xlsx
+```
+
+Génère un xlsx synthétique avec `buildXlsxBlob` et le relit avec ExcelJS pour
+vérifier : 8 feuilles, headers conformes à `SHEET_HEADERS`, header bold + fill
+solid + bordures, freeze pane sur ligne 1, round-trip numérique exact.
+
+### 3. Stress test SpatialIndex (mémoire)
+
+```bash
+npm run validate:spatial
+```
+
+Construit un `SpatialIndex` sur 50 étages × 5 000 espaces × 100 000 éléments,
+vérifie que le heap revient à son baseline après libération (seuil 30 MB) et
+que les queries (`storeyOfElement`, `spaceOfElement`) n'allouent rien de
+durable.
+
+### 4. npm link dans un projet viewer existant
+
+```bash
+# Dans le repo plugin
+cd Plugin-CoBie
+npm run build          # produit dist/
+npm link
+
+# Dans votre projet viewer
+cd ../mon-projet-viewer
+npm link cobie-bimdata-viewer-plugin
+```
+
+Le plugin sera résolu depuis le checkout local. Toute reconstruction
+(`npm run build`) sera immédiatement visible côté viewer après reload.
+
 ## Repo associé
 
 L'implémentation Python complète (CLI + serveur MCP + audits) reste maintenue dans [Slimouzi/COBie-extract](https://github.com/Slimouzi/COBie-extract). Ce plugin en est la version client pure JS.

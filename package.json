@@ -8,9 +8,11 @@
   "exports": {
     ".": {
       "import": "./dist/cobie-bimdata-viewer-plugin.es.js",
-      "require": "./dist/cobie-bimdata-viewer-plugin.umd.js"
+      "require": "./dist/cobie-bimdata-viewer-plugin.umd.js",
+      "default": "./dist/cobie-bimdata-viewer-plugin.es.js"
     },
-    "./style.css": "./dist/style.css"
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",

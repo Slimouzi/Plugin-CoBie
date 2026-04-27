@@ -12,10 +12,18 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
-import { BIMDataClient } from "./lib/bimdataClient.js";
-import { extractCobie } from "./lib/extractor.js";
-import { buildXlsxBlob } from "./lib/exporter.js";
+/**
+ * Bouton "Export COBie" injecté dans le viewer.
+ *
+ * L'extraction lourde (dénormalisation /element/raw, SpatialIndex, écriture
+ * xlsx via exceljs) tourne dans un Web Worker pour ne pas bloquer le thread
+ * principal du viewer 3D. On garde uniquement ici la résolution du token,
+ * le ping/pong de progression et le download du blob final.
+ */
+import { computed, ref, onBeforeUnmount } from "vue";
+// `?worker&inline` : Vite inline le worker en base64 dans le bundle ESM/UMD,
+// pour que l'intégrateur n'ait qu'un seul fichier à charger.
+import ExtractorWorker from "./lib/extractor.worker.js?worker&inline";
 
 const props = defineProps({
   api: { type: Object, default: () => ({}) },
@@ -28,6 +36,8 @@ const loading = ref(false);
 const error = ref("");
 const progress = ref("");
 
+let activeWorker = null;
+
 const tooltip = computed(() => `Extrait le COBie du modèle « ${props.model?.name || "?"} »`);
 
 async function resolveAccessToken() {
@@ -35,7 +45,10 @@ async function resolveAccessToken() {
   return props.api?.accessToken || props.api?.user?.accessToken || null;
 }
 
-function downloadBlob(blob, filename) {
+function downloadArrayBuffer(buffer, filename) {
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -50,10 +63,20 @@ function safeName(s) {
   return (s || "export").replace(/[\\/:*?"<>|]+/g, "_");
 }
 
+function terminateWorker() {
+  if (activeWorker) {
+    activeWorker.terminate();
+    activeWorker = null;
+  }
+}
+
+onBeforeUnmount(terminateWorker);
+
 async function onExport() {
   error.value = "";
   progress.value = "";
   loading.value = true;
+
   try {
     const accessToken = await resolveAccessToken();
     if (!accessToken) throw new Error("Token d'accès BIMData introuvable dans le contexte plugin.");
@@ -64,23 +87,41 @@ async function onExport() {
       throw new Error("Identifiants cloud/project/model manquants dans le contexte.");
     }
 
-    const client = new BIMDataClient({ cloudId, projectId, modelId, accessToken });
-    const { sheets, modelName } = await extractCobie(client, (msg) => {
-      progress.value = msg.replace(/^\s+/, "").slice(0, 80);
-      // eslint-disable-next-line no-console
-      console.info("[cobie-export]", msg);
+    // Si un worker précédent traîne (cas peu probable, mais safe), on le coupe.
+    terminateWorker();
+    const worker = new ExtractorWorker();
+    activeWorker = worker;
+
+    const { buffer, modelName } = await new Promise((resolve, reject) => {
+      worker.addEventListener("message", (ev) => {
+        const msg = ev.data || {};
+        if (msg.type === "progress") {
+          progress.value = (msg.message || "").replace(/^\s+/, "").slice(0, 80);
+          // eslint-disable-next-line no-console
+          console.info("[cobie-export]", msg.message);
+        } else if (msg.type === "done") {
+          resolve({ buffer: msg.buffer, modelName: msg.modelName });
+        } else if (msg.type === "error") {
+          reject(new Error(msg.message || "Worker error"));
+        }
+      });
+      worker.addEventListener("error", (ev) => {
+        reject(new Error(ev.message || "Worker error"));
+      });
+      worker.postMessage({
+        cmd: "extract",
+        payload: { cloudId, projectId, modelId, accessToken },
+      });
     });
 
-    progress.value = "Génération xlsx…";
-    const blob = await buildXlsxBlob(sheets);
-
     const ts = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 15);
-    downloadBlob(blob, `COBie_${safeName(modelName)}_${ts}.xlsx`);
+    downloadArrayBuffer(buffer, `COBie_${safeName(modelName)}_${ts}.xlsx`);
   } catch (err) {
     error.value = err?.message || String(err);
     // eslint-disable-next-line no-console
     console.error("[cobie-export]", err);
   } finally {
+    terminateWorker();
     loading.value = false;
     progress.value = "";
   }
